@@ -122,6 +122,9 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 		}, {
 			Namespace: "personal",
 			Service:   NewPersonalAccountAPI(apiBackend, nonceLock),
+		}, {
+			Namespace: "public",
+			Service:   NewBlockChainAPI(apiBackend),
 		},
 	}
 }

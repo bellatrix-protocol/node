@@ -183,7 +183,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*LightEthereum, error) {
 		rawdb.WriteChainConfig(chainDb, genesisHash, chainConfig)
 	}
 
-	leth.ApiBackend = &LesApiBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, leth, nil}
+	leth.ApiBackend = &LesApiBackend{extRPCEnabled: stack.Config().ExtRPCEnabled(), allowUnprotectedTxs: stack.Config().AllowUnprotectedTxs, eth: leth, gpo: nil}
 	gpoParams := config.GPO
 	if gpoParams.Default == nil {
 		gpoParams.Default = config.Miner.GasPrice
@@ -296,7 +296,7 @@ func (s *LightDummyAPI) Mining() bool {
 // APIs returns the collection of RPC services the ethereum package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
 func (s *LightEthereum) APIs() []rpc.API {
-	apis := ethapi.GetAPIs(s.ApiBackend)
+	apis := ethapi.GetAPIs(s.ApiBackend, nil)
 	apis = append(apis, s.engine.APIs(s.BlockChain().HeaderChain())...)
 	return append(apis, []rpc.API{
 		{

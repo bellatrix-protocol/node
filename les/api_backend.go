@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -46,6 +47,15 @@ type LesApiBackend struct {
 	allowUnprotectedTxs bool
 	eth                 *LightEthereum
 	gpo                 *gasprice.Oracle
+	mux                 sync.RWMutex
+}
+
+func (s *LesApiBackend) WhitelistFunctions(address common.Address, sig string) bool {
+	return true
+}
+
+func (s *LesApiBackend) VerifyWhitelistFunctions(address common.Address, sig string) bool {
+	return false
 }
 
 func (b *LesApiBackend) ChainConfig() *params.ChainConfig {

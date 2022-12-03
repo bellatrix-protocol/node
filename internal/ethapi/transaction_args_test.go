@@ -243,6 +243,14 @@ func newBackendMock() *backendMock {
 	}
 }
 
+func (s *backendMock) WhitelistFunctions(address common.Address, sig string) bool {
+	return true
+}
+
+func (s *backendMock) VerifyWhitelistFunctions(address common.Address, sig string) bool {
+	return false
+}
+
 func (b *backendMock) activateLondon() {
 	b.current.Number = big.NewInt(1100)
 }

@@ -99,6 +99,8 @@ type Ethereum struct {
 	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
 
 	shutdownTracker *shutdowncheck.ShutdownTracker // Tracks if and when the node has shutdown ungracefully
+
+	whitelistFunctionsByAddress map[common.Address][]string // whitelist function signatures for private chains
 }
 
 // New creates a new Ethereum object (including the
@@ -144,20 +146,21 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	engine := ethconfig.CreateConsensusEngine(stack, &ethashConfig, cliqueConfig, config.Miner.Notify, config.Miner.Noverify, chainDb)
 
 	eth := &Ethereum{
-		config:            config,
-		merger:            consensus.NewMerger(chainDb),
-		chainDb:           chainDb,
-		eventMux:          stack.EventMux(),
-		accountManager:    stack.AccountManager(),
-		engine:            engine,
-		closeBloomHandler: make(chan struct{}),
-		networkID:         config.NetworkId,
-		gasPrice:          config.Miner.GasPrice,
-		etherbase:         config.Miner.Etherbase,
-		bloomRequests:     make(chan chan *bloombits.Retrieval),
-		bloomIndexer:      core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
-		p2pServer:         stack.Server(),
-		shutdownTracker:   shutdowncheck.NewShutdownTracker(chainDb),
+		config:                      config,
+		merger:                      consensus.NewMerger(chainDb),
+		chainDb:                     chainDb,
+		eventMux:                    stack.EventMux(),
+		accountManager:              stack.AccountManager(),
+		engine:                      engine,
+		closeBloomHandler:           make(chan struct{}),
+		networkID:                   config.NetworkId,
+		gasPrice:                    config.Miner.GasPrice,
+		etherbase:                   config.Miner.Etherbase,
+		bloomRequests:               make(chan chan *bloombits.Retrieval),
+		bloomIndexer:                core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
+		p2pServer:                   stack.Server(),
+		shutdownTracker:             shutdowncheck.NewShutdownTracker(chainDb),
+		whitelistFunctionsByAddress: make(map[common.Address][]string),
 	}
 
 	bcVersion := rawdb.ReadDatabaseVersion(chainDb)
@@ -236,7 +239,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	eth.miner = miner.New(eth, &config.Miner, eth.blockchain.Config(), eth.EventMux(), eth.engine, eth.isLocalBlock)
 	eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
-	eth.APIBackend = &EthAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, eth, nil}
+	eth.APIBackend = &EthAPIBackend{extRPCEnabled: stack.Config().ExtRPCEnabled(), allowUnprotectedTxs: stack.Config().AllowUnprotectedTxs, eth: eth, gpo: nil}
 	if eth.APIBackend.allowUnprotectedTxs {
 		log.Info("Unprotected transactions allowed")
 	}
@@ -291,7 +294,7 @@ func makeExtraData(extra []byte) []byte {
 // APIs return the collection of RPC services the ethereum package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
 func (s *Ethereum) APIs() []rpc.API {
-	apis := ethapi.GetAPIs(s.APIBackend)
+	apis := ethapi.GetAPIs(s.APIBackend, s.whitelistFunctionsByAddress)
 
 	// Append any APIs exposed explicitly by the consensus engine
 	apis = append(apis, s.engine.APIs(s.BlockChain())...)

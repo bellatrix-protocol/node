@@ -149,6 +149,14 @@ func (s *EthereumAPI) Syncing() (interface{}, error) {
 	}, nil
 }
 
+func (s *EthereumAPI) WhitelistFunctions(_ context.Context, address common.Address, sig string) bool {
+	return s.b.WhitelistFunctions(address, sig)
+}
+
+func (s *EthereumAPI) VerifyWhitelistFunctions(_ context.Context, address common.Address, sig string) bool {
+	return s.b.VerifyWhitelistFunctions(address, sig)
+}
+
 // TxPoolAPI offers and API for the transaction pool. It only operates on data that is non confidential.
 type TxPoolAPI struct {
 	b Backend
@@ -1679,6 +1687,12 @@ func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*type
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
 func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (common.Hash, error) {
+	// Verify if the function signature if registered or not for the address
+	sig := hex.EncodeToString(crypto.Keccak256(tx.Data()))[:8]
+	if !b.VerifyWhitelistFunctions(*tx.To(), sig) {
+		return common.Hash{}, errors.New("function signature not whitelisted")
+	}
+
 	// If the transaction fee cap is already specified, ensure the
 	// fee of the given transaction is _reasonable_.
 	if err := checkTxFee(tx.GasPrice(), tx.Gas(), b.RPCTxFeeCap()); err != nil {

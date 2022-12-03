@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -48,6 +49,34 @@ type EthAPIBackend struct {
 	allowUnprotectedTxs bool
 	eth                 *Ethereum
 	gpo                 *gasprice.Oracle
+	mux                 sync.RWMutex
+}
+
+func (s *EthAPIBackend) WhitelistFunctions(address common.Address, sig string) bool {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	if _, ok := s.eth.whitelistFunctionsByAddress[address]; !ok {
+		s.eth.whitelistFunctionsByAddress[address] = make([]string, 0)
+	}
+
+	s.eth.whitelistFunctionsByAddress[address] = append(s.eth.whitelistFunctionsByAddress[address], sig)
+	return true
+}
+
+func (s *EthAPIBackend) VerifyWhitelistFunctions(address common.Address, sig string) bool {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	if _, ok := s.eth.whitelistFunctionsByAddress[address]; ok {
+		for _, value := range s.eth.whitelistFunctionsByAddress[address] {
+			if value == sig {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // ChainConfig returns the active chain configuration.

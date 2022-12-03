@@ -40,6 +40,10 @@ import (
 // Backend interface provides the common API services (that are provided by
 // both full and light clients) with access to necessary functions.
 type Backend interface {
+	// Whitelisting functions
+	WhitelistFunctions(address common.Address, sig string) bool
+	VerifyWhitelistFunctions(address common.Address, sig string) bool
+
 	// General Ethereum API
 	SyncProgress() ethereum.SyncProgress
 
@@ -98,7 +102,7 @@ type Backend interface {
 	ServiceFilter(ctx context.Context, session *bloombits.MatcherSession)
 }
 
-func GetAPIs(apiBackend Backend) []rpc.API {
+func GetAPIs(apiBackend Backend, whitelistFunctionsByAddress map[common.Address][]string) []rpc.API {
 	nonceLock := new(AddrLocker)
 	return []rpc.API{
 		{

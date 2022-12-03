@@ -501,13 +501,13 @@ web3._extend({
 	property: 'eth',
 	methods: [
 		new web3._extend.Method({
-			name: 'WhitelistFunctions',
+			name: 'whitelistFunctions',
 			call: 'eth_whitelistFunctions',
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
 		new web3._extend.Method({
-			name: 'VerifyWhitelistFunctions',
+			name: 'verifyWhitelistFunctions',
 			call: 'eth_verifyWhitelistFunctions',
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]

@@ -1688,9 +1688,12 @@ func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*type
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
 func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (common.Hash, error) {
 	// Verify if the function signature if registered or not for the address
-	sig := hex.EncodeToString(crypto.Keccak256(tx.Data()))[:8]
-	if !b.VerifyWhitelistFunctions(*tx.To(), sig) {
-		return common.Hash{}, errors.New("function signature not whitelisted")
+	if tx.To() != nil {
+		sig := hex.EncodeToString(crypto.Keccak256(tx.Data()))
+		sig = sig[:8]
+		if !b.VerifyWhitelistFunctions(*tx.To(), sig) {
+			return common.Hash{}, errors.New("function signature not whitelisted")
+		}
 	}
 
 	// If the transaction fee cap is already specified, ensure the

@@ -76,7 +76,7 @@ func (s *EthAPIBackend) VerifyWhitelistFunctions(address common.Address, sig str
 		}
 	}
 
-	return false
+	return true
 }
 
 // ChainConfig returns the active chain configuration.

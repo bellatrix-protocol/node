@@ -18,11 +18,15 @@ package types
 
 import (
 	"bytes"
+	"math/big"
 	"sync"
 
+	"github.com/cbergoon/merkletree"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/iden3/go-iden3-crypto/poseidon"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -110,4 +114,56 @@ func DeriveSha(list DerivableList, hasher TrieHasher) common.Hash {
 		hasher.Update(indexBuf, value)
 	}
 	return hasher.Hash()
+}
+
+type TestContent struct {
+	x []byte
+}
+
+// CalculateHash hashes the values of a TestContent
+func (t TestContent) CalculateHash() (*big.Int, error) {
+	hash, err := poseidon.HashBytes(t.x)
+	if err != nil {
+		return nil, err
+	}
+	return hash, nil
+}
+
+// Equals tests for equality of two Contents
+func (t TestContent) Equals(other merkletree.Content) (bool, error) {
+	return true, nil
+}
+
+// GenerateTxRoot takes in transactions as input and returns the root hash
+func GenerateTxRoot(txs []*Transaction) common.Hash {
+	var leaves []merkletree.Content
+
+	for i := 0; i < len(txs); i++ {
+		tx := txs[i]
+		header := tx.Hash().Bytes()
+		leaves = append(leaves, TestContent{x: header})
+	}
+
+	if len(leaves) == 0 {
+		return common.Hash{}
+	}
+
+	// Create a new Merkle Tree from the list of Content
+	t, err := merkletree.NewTree(leaves)
+	if err != nil {
+		log.Info("---- error in merkle tree create", "err", err)
+	}
+
+	hash := new(big.Int)
+	hash.SetBytes(t.Root.Hash)
+	log.Info("Merkle tree generation completed", "hash", t.Root.Hash, "bigint hash", hash)
+
+	// Keccak256 based hashing
+	// tree := merkle.NewTreeWithOpts(merkle.TreeOptions{EnableHashSorting: false, DisableHashLeaves: true})
+	// if err := tree.Generate(convert(leaves), sha3.NewLegacyKeccak256()); err != nil {
+	// 	return common.Hash{}
+	// }
+
+	// return common.BytesToHash(t.MerkleRoot())
+	return common.BytesToHash(t.Root.Hash)
 }

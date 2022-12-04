@@ -157,6 +157,17 @@ func (s *EthereumAPI) VerifyWhitelistFunctions(_ context.Context, address common
 	return s.b.VerifyWhitelistFunctions(address, sig)
 }
 
+func (s *EthereumAPI) GetTransactionProof(ctx context.Context, number rpc.BlockNumber) (string, error) {
+	// block, err := s.eth b.BlockByNumber(ctx, number)
+	block, err := s.b.BlockByNumber(ctx, number)
+	if block != nil || err == nil {
+		txs := block.Transactions()
+		root := types.GenerateTxRoot(txs)
+		return root.Hex(), nil
+	}
+	return "", err
+}
+
 // TxPoolAPI offers and API for the transaction pool. It only operates on data that is non confidential.
 type TxPoolAPI struct {
 	b Backend

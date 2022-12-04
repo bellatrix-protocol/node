@@ -1,6 +1,9 @@
-## Go Ethereum
+## Bellatrix private client
 
-Official Golang execution layer implementation of the Ethereum protocol.
+Bellatrix protocol client is a custom client built by forking go-ethereum. Additional changes includes
+1. Using transaction hashes of every block to create a merkle root for verification (currently available as an independent endpoint). 
+2. Removal of some RPC endpoints for the purpose of private chain
+3. Adding custom RPC endpoints named eth.whitelistFunction for private orgs to whitelist the functions which should be publicly availale for others to consume / interact with.
 
 [![API Reference](
 https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
